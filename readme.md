@@ -12,9 +12,10 @@ This script contains an option to enable **passwordless `sudo`** for your user. 
 
 ## 🚀 Quick Install (One-Liner)
 
-To download and run the latest version of the script, open your terminal and paste the following command.
+To download and run the latest version of the script, open your terminal and paste one of the commands below.
 
-This command fetches the script from this repository using `curl` and pipes it directly into `bash` with `sudo` privileges, which is required for the setup.
+This command downloads the script, makes it executable, and then runs it with `sudo`, which is required for the setup and allows the interactive menu to work.
 
+**Default (using `wget`):**
 ```bash
-curl -sSL [https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh](https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh) | sudo bash
+wget -qO ubuntu_setup.sh [https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh](https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh) && chmod +x ubuntu_setup.sh && sudo ./ubuntu_setup.sh
