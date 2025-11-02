@@ -149,14 +149,18 @@ install_and_customize() {
         echo "Firefox not found. Skipping removal."
     fi
 
-    # --- GNOME Customization ---
+    # --- GNOME Customization (FIXED) ---
     echo "Applying GNOME Desktop customizations (Dark Mode, Dock settings, Pinning)..."
-    # Run gsettings as the original user, not as root
-    sudo -u "${SETUP_USER}" gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    sudo -u "${SETUP_USER}" gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
-    sudo -u "${SETUP_USER}" gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 38
-    sudo -u "${SETUP_USER}" gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
-    sudo -u "${SETUP_USER}" gsettings set org.gnome.shell favorite-apps "$PIN_LIST_FULL"
+    
+    # We must explicitly set the D-Bus address for gsettings to work from a sudo script.
+    export DBUS_PATH="unix:path=/run/user/$(id -u ${SETUP_USER})/bus"
+    
+    # Run gsettings as the original user, using the correct D-Bus path and schema
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock dock-position 'BOTTOM'
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock dash-max-icon-size 38
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock autohide false
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell favorite-apps "$PIN_LIST_FULL"
 
     # --- Final Cleanup ---
     echo "Performing final cleanup..."
@@ -192,7 +196,7 @@ case "$OPTION" in
         setup_admin_privileges
         install_base_tools
         install_and_customize
-        install_grub_theme # <-- New theme function call here
+        install_grub_theme
         echo ""
         echo "=================================================================================="
         echo "Option 2 (FULL) Setup complete. The system will now REBOOT for all changes "
