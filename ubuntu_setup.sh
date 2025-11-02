@@ -33,9 +33,11 @@ read -p "Press [Enter] to continue with setup options..."
 # --- Configuration Variables ---
 SETUP_USER=${SUDO_USER:-$USER} # SUDO_USER is set when running via sudo
 CHROME_DOWNLOAD="/tmp/google-chrome.deb"
+GRUB_THEME_REPO="https://github.com/yeyushengfan258/Office-grub-theme"
+GRUB_THEME_DIR="/tmp/office-grub-theme"
 
 # The final, verified list for your dock favorites in requested order:
-PIN_LIST_FULL="['google-chrome.desktop', 'postman_postman.desktop', 'code_code.desktop', 'org.gnome.Ptyxis.desktop', 'spotify_spotify.desktop', 'discord_discord.desktop', 'steam_steam.desktop', 'org.gnome.Nautilus.desktop', 'snap-store_snap-store.desktop']"
+PIN_LIST_FULL="['google-chrome.desktop', 'code_code.desktop', 'postman_postman.desktop', 'org.gnome.Ptyxis.desktop', 'spotify_spotify.desktop', 'discord_discord.desktop', 'steam_steam.desktop', 'org.gnome.Nautilus.desktop', 'snap-store_snap-store.desktop']"
 
 # --- Helper Functions ---
 
@@ -78,6 +80,42 @@ install_base_tools() {
 
     echo "✅ Base tools checked and installed."
 }
+
+install_grub_theme() {
+    echo ""
+    echo "--- 3. Installing GRUB Theme and Fixing Menu Visibility ---"
+
+    # Pre-install 'dialog' dependency (required by the theme's script)
+    echo "Installing 'dialog' dependency..."
+    sudo apt install dialog -y
+
+    # 1. Clone the repository
+    echo "Cloning theme from GitHub..."
+    sudo rm -rf "${GRUB_THEME_DIR}" 
+    git clone "${GRUB_THEME_REPO}" "${GRUB_THEME_DIR}"
+
+    # 2. Run the theme's installer
+    echo "Running the theme's install.sh script..."
+    cd "${GRUB_THEME_DIR}"
+    sudo bash install.sh
+
+    # 3. Ensure GRUB menu is visible (This is a must-fix)
+    echo "Setting GRUB menu to be visible for 5 seconds..."
+    sudo sed -i -E "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
+    sudo sed -i -E "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/" /etc/default/grub
+
+    # 4. Update GRUB to apply the theme and timeout
+    echo "Updating GRUB to apply theme and settings..."
+    sudo update-grub
+
+    # 5. Clean up
+    echo "Cleaning up temporary installation files..."
+    cd ~
+    sudo rm -rf "${GRUB_THEME_DIR}"
+
+    echo "✅ GRUB Theme installed and menu visibility fixed."
+}
+
 
 install_and_customize() {
     echo ""
@@ -134,7 +172,7 @@ clear
 echo "=================================================================================="
 echo "Please select an option:"
 echo "  1  - Admin Setup & Base Tools ONLY (Privileges, Dialout, Passwordless Sudo, Python/Git/Pip)"
-echo "  2  - FULL Setup (Option 1 + All Software Install + GNOME Customization)"
+echo "  2  - FULL Setup (Option 1 + All Software Install + GNOME Customization + GRUB Theme)"
 echo "  0  - Exit without making changes"
 echo "=================================================================================="
 
@@ -154,6 +192,7 @@ case "$OPTION" in
         setup_admin_privileges
         install_base_tools
         install_and_customize
+        install_grub_theme # <-- New theme function call here
         echo ""
         echo "=================================================================================="
         echo "Option 2 (FULL) Setup complete. The system will now REBOOT for all changes "
