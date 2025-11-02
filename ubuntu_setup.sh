@@ -156,10 +156,11 @@ install_and_customize() {
     export DBUS_PATH="unix:path=/run/user/$(id -u ${SETUP_USER})/bus"
     
     # Run gsettings as the original user, using the correct D-Bus path and schema
+    # Use the schema we found: org.gnome.shell.extensions.dash-to-dock
     sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock dock-position 'BOTTOM'
-    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock dash-max-icon-size 38
-    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.ubuntu-dock autohide false
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 34
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
     sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell favorite-apps "$PIN_LIST_FULL"
 
     # --- Final Cleanup ---
