@@ -49,7 +49,7 @@ command_exists () {
 # --- Main Setup Functions ---
 
 setup_admin_privileges() {
-    # This function is now silent.
+    # This function is silent.
     
     echo "Adding user '${SETUP_USER}' to 'sudo' (admin) and 'dialout' groups..."
     sudo usermod -aG sudo "${SETUP_USER}"
@@ -70,7 +70,7 @@ setup_admin_privileges() {
 }
 
 install_base_tools() {
-    # This function is now silent.
+    # This function is silent.
     sudo apt update
     
     # Python3, pip, and Git Installation with checks
@@ -82,7 +82,9 @@ install_base_tools() {
 }
 
 install_grub_theme() {
-    # This function is now silent.
+    # This function will be LOUD/LOG everything as requested
+    echo ""
+    echo "--- 3. Installing GRUB Theme ---"
 
     # Pre-install 'dialog' dependency (required by the theme's script)
     echo "Installing 'dialog' dependency..."
@@ -107,7 +109,9 @@ install_grub_theme() {
 }
 
 configure_grub_boot_order() {
-    # This function is now silent.
+    # This function will be LOUD/LOG everything as requested
+    echo ""
+    echo "--- 4. Configuring GRUB Boot Order (Windows First) ---"
 
     # --- PASO 1: REPARAR GRUB (Por si acaso) ---
     echo "Purging grub-customizer and reinstalling GRUB packages..."
@@ -191,7 +195,7 @@ EOF
 
 
 install_and_customize() {
-    # This function is now silent.
+    # This function is silent.
 
     echo "Checking for and installing optional software: Chrome, VS Code, Spotify, Discord, Steam, Postman..."
     
@@ -278,11 +282,13 @@ case "$OPTION" in
         echo "--- 3. Installing Software and Customizing GNOME ---"
         install_and_customize > /dev/null 2>&1
         
-        echo "--- 4. Installing GRUB Theme ---"
-        install_grub_theme > /dev/null 2>&1
+        echo "--- 4. Installing GRUB Theme (Logging enabled) ---"
+        # Esta llamada ahora mostrará toda la salida
+        install_grub_theme
         
-        echo "--- 5. Configuring GRUB Boot Order ---"
-        configure_grub_boot_order > /dev/null 2>&1
+        echo "--- 5. Configuring GRUB Boot Order (Logging enabled) ---"
+        # Esta llamada ahora mostrará toda la salida
+        configure_grub_boot_order
         
         echo ""
         echo "=================================================================================="
