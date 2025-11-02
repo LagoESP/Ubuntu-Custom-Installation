@@ -18,4 +18,4 @@ This command downloads the script, makes it executable, and then runs it with `s
 
 **Default (using `wget`):**
 ```bash
-wget -qO ubuntu_setup.sh [https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh](https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh) && chmod +x ubuntu_setup.sh && sudo ./ubuntu_setup.sh
+wget -qO ubuntu_setup.sh https://raw.githubusercontent.com/LagoESP/Ubuntu-Custom-Installation/main/ubuntu_setup.sh && chmod +x ubuntu_setup.sh && sudo ./ubuntu_setup.sh
