@@ -37,7 +37,6 @@ GRUB_THEME_REPO="https://github.com/yeyushengfan258/Office-grub-theme"
 GRUB_THEME_DIR="/tmp/office-grub-theme"
 
 # The final, verified list for your dock favorites in requested order:
-# 1. Chrome, 2. VSCode, 3. Postman, 4. Terminal, 5. Spotify, 6. Discord, 7. Steam, 8. Files, 9. Appstore
 PIN_LIST_FULL="['google-chrome.desktop', 'code_code.desktop', 'postman_postman.desktop', 'org.gnome.Ptyxis.desktop', 'spotify_spotify.desktop', 'discord_discord.desktop', 'steam_steam.desktop', 'org.gnome.Nautilus.desktop', 'snap-store_snap-store.desktop']"
 
 # --- Helper Functions ---
@@ -50,7 +49,7 @@ command_exists () {
 # --- Main Setup Functions ---
 
 setup_admin_privileges() {
-    echo "--- 1. Setting up Admin Privileges for user: ${SETUP_USER} ---"
+    # This function is now silent.
     
     echo "Adding user '${SETUP_USER}' to 'sudo' (admin) and 'dialout' groups..."
     sudo usermod -aG sudo "${SETUP_USER}"
@@ -71,7 +70,7 @@ setup_admin_privileges() {
 }
 
 install_base_tools() {
-    echo "--- Installing Base Development Tools (Python3, pip, Git) ---"
+    # This function is now silent.
     sudo apt update
     
     # Python3, pip, and Git Installation with checks
@@ -83,8 +82,7 @@ install_base_tools() {
 }
 
 install_grub_theme() {
-    echo ""
-    echo "--- 3. Installing GRUB Theme ---"
+    # This function is now silent.
 
     # Pre-install 'dialog' dependency (required by the theme's script)
     echo "Installing 'dialog' dependency..."
@@ -109,8 +107,7 @@ install_grub_theme() {
 }
 
 configure_grub_boot_order() {
-    echo ""
-    echo "--- 4. Configuring GRUB Boot Order (Windows First) ---"
+    # This function is now silent.
 
     # --- PASO 1: REPARAR GRUB (Por si acaso) ---
     echo "Purging grub-customizer and reinstalling GRUB packages..."
@@ -194,8 +191,7 @@ EOF
 
 
 install_and_customize() {
-    echo ""
-    echo "--- 2. Installing Additional Software and Customizing GNOME ---"
+    # This function is now silent.
 
     echo "Checking for and installing optional software: Chrome, VS Code, Spotify, Discord, Steam, Postman..."
     
@@ -232,7 +228,6 @@ install_and_customize() {
     export DBUS_PATH="unix:path=/run/user/$(id -u ${SETUP_USER})/bus"
     
     # Run gsettings as the original user, using the correct D-Bus path and schema
-    # Use the schema we found: org.gnome.shell.extensions.dash-to-dock
     sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
     sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
     sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 34
@@ -262,24 +257,38 @@ read -p "Enter option [1, 2, or 0]: " OPTION
 
 case "$OPTION" in
     1)
-        setup_admin_privileges
-        install_base_tools
+        echo "--- 1. Setting up Admin Privileges ---"
+        setup_admin_privileges > /dev/null 2>&1
+        
+        echo "--- 2. Installing Base Development Tools ---"
+        install_base_tools > /dev/null 2>&1
+        
         echo ""
         echo "=================================================================================="
         echo "Option 1 Setup complete. The system will now REBOOT for changes to take effect."
         echo "=================================================================================="
         ;;
     2)
-        setup_admin_privileges
-        install_base_tools
-        install_and_customize
-        install_grub_theme
-        configure_grub_boot_order # <-- New GRUB reorder function
+        echo "--- 1. Setting up Admin Privileges ---"
+        setup_admin_privileges > /dev/null 2>&1
+        
+        echo "--- 2. Installing Base Development Tools ---"
+        install_base_tools > /dev/null 2>&1
+        
+        echo "--- 3. Installing Software and Customizing GNOME ---"
+        install_and_customize > /dev/null 2>&1
+        
+        echo "--- 4. Installing GRUB Theme ---"
+        install_grub_theme > /dev/null 2>&1
+        
+        echo "--- 5. Configuring GRUB Boot Order ---"
+        configure_grub_boot_order > /dev/null 2>&1
+        
         echo ""
         echo "=================================================================================="
         echo "Option 2 (FULL) Setup complete. The system will now REBOOT for all changes "
         echo "to the desktop environment and user groups to take effect."
-        echo "================================S=================================================="
+        echo "=================================================================================="
         ;;
     0)
         echo "Exiting setup. No changes made."
