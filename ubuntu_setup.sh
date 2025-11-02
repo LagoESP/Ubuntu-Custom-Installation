@@ -37,6 +37,7 @@ GRUB_THEME_REPO="https://github.com/yeyushengfan258/Office-grub-theme"
 GRUB_THEME_DIR="/tmp/office-grub-theme"
 
 # The final, verified list for your dock favorites in requested order:
+# 1. Chrome, 2. VSCode, 3. Postman, 4. Terminal, 5. Spotify, 6. Discord, 7. Steam, 8. Files, 9. Appstore
 PIN_LIST_FULL="['google-chrome.desktop', 'code_code.desktop', 'postman_postman.desktop', 'org.gnome.Ptyxis.desktop', 'spotify_spotify.desktop', 'discord_discord.desktop', 'steam_steam.desktop', 'org.gnome.Nautilus.desktop', 'snap-store_snap-store.desktop']"
 
 # --- Helper Functions ---
@@ -83,7 +84,7 @@ install_base_tools() {
 
 install_grub_theme() {
     echo ""
-    echo "--- 3. Installing GRUB Theme and Fixing Menu Visibility ---"
+    echo "--- 3. Installing GRUB Theme ---"
 
     # Pre-install 'dialog' dependency (required by the theme's script)
     echo "Installing 'dialog' dependency..."
@@ -99,21 +100,96 @@ install_grub_theme() {
     cd "${GRUB_THEME_DIR}"
     sudo bash install.sh
 
-    # 3. Ensure GRUB menu is visible (This is a must-fix)
-    echo "Setting GRUB menu to be visible for 5 seconds..."
-    sudo sed -i -E "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
-    sudo sed -i -E "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/" /etc/default/grub
-
-    # 4. Update GRUB to apply the theme and timeout
-    echo "Updating GRUB to apply theme and settings..."
-    sudo update-grub
-
-    # 5. Clean up
+    # 3. Clean up
     echo "Cleaning up temporary installation files..."
     cd ~
     sudo rm -rf "${GRUB_THEME_DIR}"
 
-    echo "✅ GRUB Theme installed and menu visibility fixed."
+    echo "✅ GRUB Theme installed."
+}
+
+configure_grub_boot_order() {
+    echo ""
+    echo "--- 4. Configuring GRUB Boot Order (Windows First) ---"
+
+    # --- PASO 1: REPARAR GRUB (Por si acaso) ---
+    echo "Purging grub-customizer and reinstalling GRUB packages..."
+    sudo apt purge grub-customizer -y
+    sudo apt install --reinstall grub-common grub-pc-bin grub2-common
+
+    # --- PASO 2: CREAR LA ENTRADA "Windows" (Renombrar y Reordenar) ---
+    echo "Creating custom 'Windows' entry..."
+
+    # 2a. Encontrar la partición EFI de Windows y su UUID
+    EFI_PARTITION=$(sudo blkid -L "SYSTEM" || sudo blkid -L "ESP" || sudo fdisk -l | grep -i "EFI System" | cut -d' ' -f1)
+    EFI_UUID=$(sudo blkid -s UUID -o value "${EFI_PARTITION}")
+
+    if [ -z "${EFI_UUID}" ]; then
+        echo "❌ WARNING: No Windows EFI partition found."
+        echo "   Skipping Windows boot order customization."
+        # Run update-grub anyway to apply theme
+        sudo update-grub
+        return
+    else
+        echo "✅ Windows EFI partition found (${EFI_PARTITION}) with UUID: ${EFI_UUID}"
+        
+        # 2b. Crear la entrada personalizada para 'Windows' al principio de la lista
+        # Usamos 08_custom_windows para que se ejecute antes que 10_linux (Ubuntu)
+        sudo tee /etc/grub.d/08_custom_windows > /dev/null <<EOF
+#!/bin/sh
+echo "Found Windows (Custom Entry)" >&2
+cat << 'EOM'
+menuentry 'Windows' --class windows --class os {
+    insmod part_gpt
+    insmod fat
+    insmod chain
+    search --fs-uuid --no-floppy --set=root ${EFI_UUID}
+    chainloader /EFI/Microsoft/Boot/bootmgfw.efi
+}
+EOM
+EOF
+        
+        # 2c. Hacer ejecutable el nuevo script
+        sudo chmod +x /etc/grub.d/08_custom_windows
+        
+        # 2d. Desactivar el 'os-prober' original para evitar duplicados
+        sudo chmod -x /etc/grub.d/30_os-prober 2>/dev/null
+        echo "Custom 'Windows' entry created and os-prober disabled."
+    fi
+
+    # --- PASO 3: LIMPIAR ENTRADAS EXTRA ---
+    echo "Disabling extra GRUB menu entries..."
+    sudo chmod -x /etc/grub.d/10_linux_zfs 2>/dev/null
+    sudo chmod -x /etc/grub.d/20_linux_xen 2>/dev/null
+    sudo chmod -x /etc/grub.d/20_memtest86+ 2>/dev/null
+    sudo chmod -x /etc/grub.d/30_uefi-firmware 2>/dev/null
+    sudo chmod -x /etc/grub.d/35_fwupd 2>/dev/null
+
+    # --- PASO 4: CONFIGURAR EL ARCHIVO GRUB ---
+    echo "Configuring /etc/default/grub..."
+
+    # 4a. Ocultar "Advanced options for Ubuntu"
+    if grep -q "GRUB_DISABLE_SUBMENU" /etc/default/grub; then
+        sudo sed -i -E "s/^GRUB_DISABLE_SUBMENU=.*/GRUB_DISABLE_SUBMENU=y/" /etc/default/grub
+    else
+        echo 'GRUB_DISABLE_SUBMENU=y' | sudo tee -a /etc/default/grub
+    fi
+
+    # 4b. Establecer el arranque por defecto en '0' (que ahora será 'Windows')
+    sudo sed -i -E "s/^GRUB_DEFAULT=.*/GRUB_DEFAULT=0/" /etc/default/grub
+
+    # 4c. Desactivar 'SAVEDEFAULT'
+    sudo sed -i '/^GRUB_SAVEDEFAULT=.*/d' /etc/default/grub
+    echo 'GRUB_SAVEDEFAULT=false' | sudo tee -a /etc/default/grub
+
+    # 4d. Asegurarse de que el menú sea visible
+    sudo sed -i -E "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
+    sudo sed -i -E "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/" /etc/default/grub
+
+    # --- PASO 5: APLICAR TODO ---
+    echo "Applying all GRUB changes..."
+    sudo update-grub
+    echo "✅ GRUB reconfigured. Windows is now the default."
 }
 
 
@@ -177,7 +253,7 @@ clear
 echo "=================================================================================="
 echo "Please select an option:"
 echo "  1  - Admin Setup & Base Tools ONLY (Privileges, Dialout, Passwordless Sudo, Python/Git/Pip)"
-echo "  2  - FULL Setup (Option 1 + All Software Install + GNOME Customization + GRUB Theme)"
+echo "  2  - FULL Setup (Option 1 + All Software Install + GNOME/GRUB Customization)"
 echo "  0  - Exit without making changes"
 echo "=================================================================================="
 
@@ -198,11 +274,12 @@ case "$OPTION" in
         install_base_tools
         install_and_customize
         install_grub_theme
+        configure_grub_boot_order # <-- New GRUB reorder function
         echo ""
         echo "=================================================================================="
         echo "Option 2 (FULL) Setup complete. The system will now REBOOT for all changes "
         echo "to the desktop environment and user groups to take effect."
-        echo "=================================================================================="
+        echo "================================S=================================================="
         ;;
     0)
         echo "Exiting setup. No changes made."
