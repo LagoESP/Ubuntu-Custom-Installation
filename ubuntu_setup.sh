@@ -178,4 +178,119 @@ EOF
     # 4b. Establecer el arranque por defecto en '0' (que ahora será 'Windows')
     sudo sed -i -E "s/^GRUB_DEFAULT=.*/GRUB_DEFAULT=0/" /etc/default/grub
 
-    # 4
+    # 4c. Desactivar 'SAVEDEFAULT'
+    sudo sed -i '/^GRUB_SAVEDEFAULT=.*/d' /etc/default/grub
+    echo 'GRUB_SAVEDEFAULT=false' | sudo tee -a /etc/default/grub
+
+    # 4d. Asegurarse de que el menú sea visible
+    sudo sed -i -E "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
+    sudo sed -i -E "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/" /etc/default/grub
+
+    # --- PASO 5: APLICAR TODO ---
+    echo "Applying all GRUB changes..."
+    sudo update-grub
+    echo "✅ GRUB reconfigured. Windows is now the default."
+}
+
+
+install_and_customize() {
+    echo ""
+    echo "--- 2. Installing Additional Software and Customizing GNOME ---"
+
+    echo "Checking for and installing optional software: Chrome, VS Code, Spotify, Discord, Steam, Postman..."
+    
+    # Chrome Installation (deb) - Check for the binary 'google-chrome'
+    if ! command_exists google-chrome; then
+        echo "Installing Google Chrome..."
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O "${CHROME_DOWNLOAD}"
+        sudo dpkg -i "${CHROME_DOWNLOAD}"
+        sudo apt --fix-broken install -y
+        rm -f "${CHROME_DOWNLOAD}"
+    else
+        echo "Google Chrome already installed. Skipping."
+    fi
+
+    # Snap Installations (Check for the executable provided by the snap)
+    command_exists code || { echo "Installing VS Code (snap)..."; sudo snap install code --classic; }
+    command_exists spotify || { echo "Installing Spotify (snap)..."; sudo snap install spotify; }
+    command_exists discord || { echo "Installing Discord (snap)..."; sudo snap install discord; }
+    command_exists steam || { echo "Installing Steam (snap)..."; sudo snap install steam; }
+    command_exists postman || { echo "Installing Postman (snap)..."; sudo snap install postman; }
+    
+    # Remove Firefox (as requested)
+    if command_exists firefox; then
+        echo "Removing Firefox..."
+        sudo apt purge firefox -y
+    else
+        echo "Firefox not found. Skipping removal."
+    fi
+
+    # --- GNOME Customization (FIXED) ---
+    echo "Applying GNOME Desktop customizations (Dark Mode, Dock settings, Pinning)..."
+    
+    # We must explicitly set the D-Bus address for gsettings to work from a sudo script.
+    export DBUS_PATH="unix:path=/run/user/$(id -u ${SETUP_USER})/bus"
+    
+    # Run gsettings as the original user, using the correct D-Bus path and schema
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 34
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell.extensions.dash-to-dock autohide false
+    sudo -u "${SETUP_USER}" DBUS_SESSION_BUS_ADDRESS="${DBUS_PATH}" gsettings set org.gnome.shell favorite-apps "$PIN_LIST_FULL"
+
+    # --- Final Cleanup ---
+    echo "Performing final cleanup..."
+    sudo apt autoremove -y 
+    sudo apt autoclean
+
+    echo "✅ Software installation and desktop customization complete."
+}
+
+# --- Main Script Logic ---
+clear
+
+echo "=================================================================================="
+echo "Please select an option:"
+echo "  1  - Admin Setup & Base Tools ONLY (Privileges, Dialout, Passwordless Sudo, Python/Git/Pip)"
+echo "  2  - FULL Setup (Option 1 + All Software Install + GNOME/GRUB Customization)"
+echo "  0  - Exit without making changes"
+echo "=================================================================================="
+
+# Read the option input
+read -p "Enter option [1, 2, or 0]: " OPTION
+
+case "$OPTION" in
+    1)
+        setup_admin_privileges
+        install_base_tools
+        echo ""
+        echo "=================================================================================="
+        echo "Option 1 Setup complete. The system will now REBOOT for changes to take effect."
+        echo "=================================================================================="
+        ;;
+    2)
+        setup_admin_privileges
+        install_base_tools
+        install_and_customize
+        install_grub_theme
+        configure_grub_boot_order
+        echo ""
+        echo "=================================================================================="
+        echo "Option 2 (FULL) Setup complete. The system will now REBOOT for all changes "
+        echo "to the desktop environment and user groups to take effect."
+        echo "=================================================================================="
+        ;;
+    0)
+        echo "Exiting setup. No changes made."
+        exit 0
+        ;;
+    *)
+        echo "Invalid option selected. Exiting."
+        exit 1
+        ;;
+esac
+
+# --- Mandatory Reboot ---
+echo "System will reboot in 10 seconds. Press Ctrl+C to cancel."
+sleep 10
+sudo reboot
