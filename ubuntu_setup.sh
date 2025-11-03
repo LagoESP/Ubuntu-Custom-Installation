@@ -24,7 +24,7 @@ fi
 clear
 
 echo "=================================================================================="
-echo "          🚀 UBUNTU POST-INSTALLATION SETUP UTILITY 🚀"
+echo "         🚀 UBUNTU POST-INSTALLATION SETUP UTILITY 🚀"
 echo "=================================================================================="
 echo "This script will perform administrative setup and optional software installation."
 echo ""
@@ -74,9 +74,11 @@ install_base_tools() {
     echo "--- Installing Base Development Tools (Python3, pip, Git) ---"
     sudo apt update
     
-    # Python3, pip, and Git Installation with checks
+    # Python3, pip, venv, and Git Installation with checks
     command_exists python3 || { echo "Installing python3..."; sudo apt install python3 -y; }
     command_exists pip3 || { echo "Installing pip (python3-pip)..."; sudo apt install python3-pip -y; }
+    echo "Checking/Installing venv (python3-venv)..."
+    sudo apt install python3-venv -y
     command_exists git || { echo "Installing git..."; sudo apt install git -y; }
 
     echo "✅ Base tools checked and installed."
@@ -126,7 +128,7 @@ configure_grub_boot_order() {
 
     if [ -z "${EFI_UUID}" ]; then
         echo "❌ WARNING: No Windows EFI partition found."
-        echo "   Skipping Windows boot order customization."
+        echo "  Skipping Windows boot order customization."
         # Run update-grub anyway to apply theme
         sudo update-grub
         return
