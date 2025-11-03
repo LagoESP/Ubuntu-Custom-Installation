@@ -188,6 +188,10 @@ EOF
     sudo sed -i -E "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
     sudo sed -i -E "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/" /etc/default/grub
 
+    # --- PASO 4b: Configurar Reloj (RTC) para Dual-Boot con Windows ---
+    echo "Setting Hardware Clock (RTC) to local time for Windows compatibility..."
+    sudo timedatectl set-local-rtc 1 --adjust-system-clock
+
     # --- PASO 5: APLICAR TODO ---
     echo "Applying all GRUB changes..."
     sudo update-grub
